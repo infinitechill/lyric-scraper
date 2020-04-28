@@ -1,6 +1,5 @@
 #! /usr/local/bin/python3
 
-
 # -*- coding: utf-8 -*-
 
 try:
@@ -30,19 +29,11 @@ class LyricScraper:
 	def __init__(self, credentials_file, output_file):
 		self.credentials_file = credentials_file
 		self.output_file = output_file
-		lines = [line.rstrip('\n') for line in open(self.credentials_file)]
-		chars_to_strip = " \'\""
-		for line in lines:
-			if "client_id" in line:
-					client_id = re.findall(r'[\"\']([^\"\']*)[\"\']', line)[0]
-			if "client_secret" in line:
-					client_secret = re.findall(r'[\"\']([^\"\']*)[\"\']', line)[0]
-			if "client_access_token" in line:
-					client_access_token = re.findall(r'[\"\']([^\"\']*)[\"\']', line)[0]
-		self.client_access_token=client_access_token
-		self.client_secret=client_secret
-		self.client_id=client_id
-
+		with open(self.credentials_file, "r") as inf:
+			settings = json.loads(inf.read())
+		self.client_access_token=settings["client_access_token"]
+		self.client_secret=settings["client_secret"]
+		self.client_id=settings["client_id"]
 
 	def get_artist_id(self,search_term,num_pages=25):
 		# get_artist_id
@@ -130,6 +121,7 @@ class LyricScraper:
 				html = BeautifulSoup(page.text, "html.parser")
 				[h.extract() for h in html('script')]
 				new_lyrics = html.find("div", class_="lyrics").get_text()
+				print(new_lyrics)
 				lyrics.append(new_lyrics)
 		return lyrics
 
@@ -141,7 +133,6 @@ class LyricScraper:
 			output_file.write("%s\n" % song)
 		output_file.close()
 
-
 def main():
 	# fetch args
 	parser = argparse.ArgumentParser()
@@ -150,15 +141,6 @@ def main():
 	parser.add_argument('-o', '--output', help='Path to the outputfile')
 	args = parser.parse_args()
 
-	# set defaults
-	if not args.credentials:
-		args.credentials = 'credentials.txt'
-	if not args.artist:
-		args.artist = 'joan of arc'
-	if not args.output:
-		args.output = 'lyric-scraper.txt'
-
-	
 	myScraper=LyricScraper(args.credentials,args.output)
 	artist_id=myScraper.get_artist_id(args.artist)
 	api_paths=myScraper.get_artists_songs(artist_id)
